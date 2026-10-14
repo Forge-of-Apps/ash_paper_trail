@@ -120,6 +120,10 @@ defmodule AshPaperTrail.Resource.Changes.CreateNewVersion do
     end
   end
 
+  defp put_value(%{action_type: type} = changeset, attribute, value, :force_change)
+       when type in [:update, :destroy],
+       do: Ash.Changeset.atomic_update(changeset, attribute, value)
+
   defp put_value(changeset, attribute, value, :force_change),
     do: Ash.Changeset.force_change_attribute(changeset, attribute, value)
 

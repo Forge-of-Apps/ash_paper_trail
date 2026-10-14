@@ -229,6 +229,28 @@ defmodule AshPaperTrail.TemporalInlineTest do
 
   describe "soft destroy" do
     @tag :soft_destroy
+    test "stamps values equal to a stale record after another actor's update", %{
+      user: user,
+      other_user: other_user
+    } do
+      post = TemporalPost.create!(%{subject: "subject"}, actor: user, as_of: @t1)
+      TemporalPost.update!(post, %{body: "changed"}, actor: other_user, as_of: @t2)
+
+      archived =
+        post
+        |> Ash.Changeset.for_destroy(:archive, %{}, actor: user, as_of: @t3)
+        |> Ash.Changeset.before_action(fn changeset ->
+          fresh = version_at(TemporalPost, post.id, @t2)
+          %{changeset | data: fresh}
+        end)
+        |> Ash.destroy!(return_destroyed?: true)
+
+      assert archived.user_id == user.id
+      assert archived.version_action_type == :destroy
+      assert archived.version_action_name == :archive
+    end
+
+    @tag :soft_destroy
     test "stamps the archived period with the destroy action, actor and metadata", %{
       user: user,
       other_user: other_user
