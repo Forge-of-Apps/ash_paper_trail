@@ -227,6 +227,54 @@ defmodule AshPaperTrail.TemporalInlineTest do
     end
   end
 
+  describe "soft destroy" do
+    @tag :soft_destroy
+    test "stamps the archived period with the destroy action, actor and metadata", %{
+      user: user,
+      other_user: other_user
+    } do
+      post = TemporalPost.create!(%{subject: "subject"}, actor: user, as_of: @t1)
+
+      archived =
+        Ash.destroy!(post,
+          action: :archive,
+          actor: other_user,
+          as_of: @t2,
+          return_destroyed?: true,
+          context: %{paper_trail_metadata: %{reason_for_change: "reverted"}}
+        )
+
+      assert archived.version_action_type == :destroy
+      assert archived.version_action_name == :archive
+      assert archived.user_id == other_user.id
+      assert archived.reason_for_change == "reverted"
+      assert archived.archived_at == @t2
+      assert %Ash.Range{lower: @t2, upper: nil} = archived.valid_at
+      assert version_at(TemporalPost, post.id, @t1).version_action_name == :create
+      assert version_at(TemporalPost, post.id, @t1).user_id == user.id
+    end
+
+    @tag :soft_destroy
+    test "stamps soft destroys on the atomic bulk path", %{user: user, other_user: other_user} do
+      post = TemporalPost.create!(%{subject: "subject"}, actor: user, as_of: @t1)
+
+      %Ash.BulkResult{records: [archived], errors: []} =
+        Ash.bulk_destroy([post], :archive, %{},
+          resource: TemporalPost,
+          actor: other_user,
+          as_of: @t2,
+          strategy: [:atomic],
+          return_records?: true,
+          return_errors?: true
+        )
+
+      assert archived.version_action_type == :destroy
+      assert archived.version_action_name == :archive
+      assert archived.user_id == other_user.id
+      assert archived.archived_at == @t2
+    end
+  end
+
   describe "update" do
     setup %{user: user} do
       post =

@@ -84,8 +84,11 @@ defmodule AshPaperTrail.Resource.Changes.CreateNewVersion do
     Enum.map(changesets_and_results, fn {_, result} -> {:ok, result} end)
   end
 
-  defp stamp_inline_version(%Ash.Changeset{action_type: :destroy} = changeset, _strategy),
-    do: changeset
+  defp stamp_inline_version(
+         %Ash.Changeset{action_type: :destroy, action: %{soft?: false}} = changeset,
+         _strategy
+       ),
+       do: changeset
 
   defp stamp_inline_version(changeset, strategy) do
     resource = changeset.resource

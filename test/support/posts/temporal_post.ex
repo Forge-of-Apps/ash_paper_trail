@@ -61,6 +61,10 @@ defmodule AshPaperTrail.Test.Posts.TemporalPost do
       accept []
       change atomic_update(:views, expr(views + 1))
     end
+    destroy :archive do
+      soft? true
+      change set_attribute(:archived_at, &DateTime.utc_now/0)
+    end
   end
 
   attributes do
@@ -87,6 +91,7 @@ defmodule AshPaperTrail.Test.Posts.TemporalPost do
     end
 
     create_timestamp :inserted_at
+    attribute :archived_at, :utc_datetime_usec
     update_timestamp :updated_at
   end
 end
