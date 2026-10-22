@@ -17,14 +17,9 @@ defmodule AshPaperTrail.Test.Posts.TemporalPost do
     private? true
   end
 
-  temporal do
-    strategy :context
-    attribute :valid_at
-  end
-
   paper_trail do
-    mode(:temporal_inline)
-    version_resource?(true)
+    mode :temporal_inline
+    version_resource? true
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at]
@@ -65,6 +60,7 @@ defmodule AshPaperTrail.Test.Posts.TemporalPost do
 
     # Written as an update, like AshArchival's archive.
     destroy :archive do
+      require_atomic? false
       soft? true
       change set_attribute(:archived_at, &DateTime.utc_now/0)
     end
@@ -99,5 +95,10 @@ defmodule AshPaperTrail.Test.Posts.TemporalPost do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
+  end
+
+  temporal do
+    strategy :context
+    attribute :valid_at
   end
 end
